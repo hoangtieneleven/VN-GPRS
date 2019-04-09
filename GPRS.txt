@@ -1,0 +1,69 @@
+
+bool InitGSM()
+{
+  if (!SendATres("AT+IPR=9600\r\n","OK",200)) return false;
+  if (!SendATres("AT+CUSD=1\r\n","OK",300)) return false;
+  if (!SendATres("AT+CMGF=1\r\n","OK",300)) return false;
+  if (!SendATres("AT+CNMI=2,2,0,0\r\n","OK",400)) return false;
+  if (!SendATres("AT+CLIP=1\r\n","OK",300)) return false;
+  if (!SendATres("AT+CFUN=1\r\n","OK",300)) return false;
+  if (!SendATres("AT\r\n","OK",200)) return false;
+  return true;
+}
+
+
+bool ConnectGPRS()
+{
+  if (!SendATres("AT+CREG?\r\n","1,1",1000)) return false;
+  if (!SendATres("AT+CGATT=0\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CIPSHUT\r\n","SHUT OK",3000)) return false;
+
+  if (!SendATres("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n","OK",2000)) return false;
+  if (!SendATres("AT+SAPBR=3,1,\"APN\",\"m3-world\"\r\n","OK",2000)) return false;
+  if (!SendATres("AT+SAPBR=3,1,\"USER\",\"mms\"\r\n","OK",2000)) return false;
+  if (!SendATres("AT+SAPBR=3,1,\"PWD\",\"mms\"\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CGDCONT=1,\"IP\",\"m3-world\"\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CGACT=1,1\r\n","OK",2000)) return false;
+  if (!SendATres("AT+SAPBR=1,1\r\n","OK",5000)) return false;
+  if (!SendATres("AT+SAPBR=2,1\r\n","OK",5000)) return false;
+  if (!SendATres("AT+CGATT=1\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CIPMUX=1\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CIPQSEND=1\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CIPRXGET=1\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CSTT=\"m3-world\",\"mms\",\"mms\"\r\n","OK",2000)) return false;
+  if (!SendATres("AT+CIICR\r\n","OK",2500)) return false;
+  if (!SendATres("AT+CIFSR\r\n",".",3000)) return false;
+  if (!SendATres("AT+CDNSCFG=\"8.8.8.8\",\"8.8.4.4\"\r\n","OK",2000)) return false;
+  return true;
+}
+
+bool SendATres(String ATCMD, String RESPOND, byte waitResTime)
+{
+  String ATDATA = "";
+  byte TimeSendAT = 0;
+  Serial.print("SEND ATCMD TO GSM MODULE: ");
+  Serial.println(ATCMD);
+  while (ATDATA.indexOf(RESPOND) <= 0)
+  {
+    TimesSendATCMD++;
+    if (TimesSendATCMD > 3)
+    {
+      return false;
+      break;
+    }
+    SerialAT.print(ATCMD);
+    unsigned long preMillis = millis();
+    {
+      while (ATDATA.indexOf(RESPOND) <= 0)
+      {
+        if ((unsigned long)(millis() - preMillis) > waitResTime)
+        {
+          break;
+        }
+        ATDATA = SerialAT.readString();
+      }
+    }
+    Serial.println(ATDATA);
+  }
+  return true;
+}
